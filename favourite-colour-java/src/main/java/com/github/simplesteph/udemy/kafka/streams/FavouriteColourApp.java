@@ -2,15 +2,15 @@ package com.github.simplesteph.udemy.kafka.streams;
 
 import java.util.Properties;
 import java.util.Arrays;
-import java.util.stream.Collectors;
+// import java.util.stream.Collectors;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KStreamBuilder;
 import org.apache.kafka.streams.kstream.KTable;
 
 public class FavouriteColourApp {
@@ -26,7 +26,7 @@ public class FavouriteColourApp {
         // we disable the cache to demonstrate all the "steps" involved in the transformation - not recommended in prod
         config.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, "0");
 
-        KStreamBuilder builder = new KStreamBuilder();
+        StreamsBuilder builder = new StreamsBuilder();
 
         // Step 1: We create the topic of users keys to colours
         KStream<String, String> textLines = builder.stream("favourite-colour-input");
@@ -50,12 +50,12 @@ public class FavouriteColourApp {
         KTable<String, Long> favouriteColours = usersAndColoursTable
                 // 5 - we group by colour within the KTable
                 .groupBy((user, colour) -> new KeyValue<>(colour, colour))
-                .count("CountsByColours");
+                .count();
 
         // 6 - we output the results to a Kafka Topic - don't forget the serializers
-        favouriteColours.to(Serdes.String(), Serdes.Long(),"favourite-colour-output");
+        favouriteColours.toStream().to("favourite-colour-output");
 
-        KafkaStreams streams = new KafkaStreams(builder, config);
+        KafkaStreams streams = new KafkaStreams(builder.build(), config);
         // only do this in dev - not in prod
         streams.cleanUp();
         streams.start();

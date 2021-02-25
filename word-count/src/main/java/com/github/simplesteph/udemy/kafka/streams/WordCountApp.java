@@ -6,9 +6,9 @@ import java.util.Arrays;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KStreamBuilder;
 import org.apache.kafka.streams.kstream.KTable;
 
 public class WordCountApp {
@@ -20,7 +20,7 @@ public class WordCountApp {
         config.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         config.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 
-        KStreamBuilder builder = new KStreamBuilder();
+        StreamsBuilder builder = new StreamsBuilder();
         // 1 - stream from Kafka
 
         KStream<String, String> textLines = builder.stream("word-count-input");
@@ -36,12 +36,12 @@ public class WordCountApp {
                 // 5 - group by key before aggregation
                 .groupByKey()
                 // 6 - count occurrences
-                .count("Counts");
+                .count();
 
         // 7 - to in order to write the results back to kafka
-        wordCounts.to(Serdes.String(), Serdes.Long(), "word-count-output");
+        wordCounts.toStream().to("word-count-output");
 
-        KafkaStreams streams = new KafkaStreams(builder, config);
+        KafkaStreams streams = new KafkaStreams(builder.build(), config);
         streams.start();
 
 
